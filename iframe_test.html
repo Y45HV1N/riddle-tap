@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuestionPro Embed Test</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; }
+  .box { padding: 28px; text-align: center; }
+  .ok { background: #16a34a; color: #fff; padding: 20px; border-radius: 10px; font-size: 1.4rem; font-weight: 700; }
+  .info { margin-top: 18px; font-size: 1.05rem; color: #1f2933; }
+  .sent { margin-top: 14px; font-size: 1.15rem; font-weight: 700; color: #2563eb; }
+  button { margin-top: 18px; padding: 12px 28px; font-size: 1.05rem; border: none; border-radius: 8px;
+           background: #2563eb; color: #fff; cursor: pointer; }
+  code { background: #eef; padding: 2px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="ok">STEP 1 OK: This external page is showing INSIDE QuestionPro.</div>
+  <div class="info">
+    If you can read this box inside your QuestionPro survey, then QuestionPro is
+    NOT stripping the iframe. (Test 1 passes.)
+  </div>
+  <div class="info">Running inside an iframe: <strong id="framed">checking...</strong></div>
+  <div class="info">Participant id read from URL: <strong id="pid">(none)</strong></div>
+  <button id="send-btn">Send test data to QuestionPro now</button>
+  <div class="sent" id="sent-note"></div>
+  <div class="info">
+    The test value being sent is: <code>IFRAME_OK_12345</code><br>
+    After this, check whether custom variable 1 in your QuestionPro response
+    contains that exact value. (Test 2.)
+  </div>
+</div>
+
+<script>
+  // Show whether we are inside an iframe.
+  document.getElementById("framed").textContent =
+    (window.parent && window.parent !== window) ? "YES" : "NO (open it via the survey, not directly)";
+
+  // Show any participant id passed in the URL (?pid=... or ?ext_ref=...).
+  try {
+    var p = new URLSearchParams(window.location.search);
+    var pid = p.get("pid") || p.get("ext_ref") || p.get("custom1") || "(none)";
+    document.getElementById("pid").textContent = pid;
+  } catch (e) {}
+
+  // Build the same kind of message the real task sends.
+  function sendTest() {
+    var payload = {
+      type: "RIDDLE_TAP_DATA",     // same type the receiver (Snippet B) listens for
+      task: "iframe_test",
+      pid: (new URLSearchParams(window.location.search)).get("pid") || "",
+      compact: "IFRAME_OK_12345",  // <- this is what should land in custom variable 1
+      trials: []
+    };
+    if (window.parent && window.parent !== window) {
+      try { window.parent.postMessage(payload, "*"); } catch (e) {}
+    }
+    document.getElementById("sent-note").textContent = "Test data sent at " + new Date().toLocaleTimeString();
+  }
+
+  // Auto-send once after 2 seconds, and also on button click.
+  setTimeout(sendTest, 2000);
+  document.getElementById("send-btn").addEventListener("click", sendTest);
+</script>
+</body>
+</html>
